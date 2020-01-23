@@ -35,6 +35,13 @@ const (
 	// If not provided, a default generic template is used.
 	AnnotationAgentInjectTemplate = "vault.hashicorp.com/agent-inject-template"
 
+	// AnnotationAgentInjectCommand is the key annotation that configures Vault Agent
+	// to run a command after the secret is rendered. The name of the template is any
+	// unique string after "vault.hashicorp.com/agent-inject-command-". This should map
+	// to the same unique value provided in ""vault.hashicorp.com/agent-inject-secret-".
+	// If not provided (the default), no command is executed.
+	AnnotationAgentInjectCommand = "vault.hashicorp.com/agent-inject-command"
+
 	// AnnotationAgentImage is the name of the Vault docker image to use.
 	AnnotationAgentImage = "vault.hashicorp.com/agent-image"
 
@@ -201,7 +208,14 @@ func secrets(annotations map[string]string) []*Secret {
 				template = val
 			}
 
-			secrets = append(secrets, &Secret{Name: name, Path: path, Template: template})
+			var command string
+			commandName := fmt.Sprintf("%s-%s", AnnotationAgentInjectCommand, raw)
+
+			if val, ok := annotations[commandName]; ok {
+				command = val
+			}
+
+			secrets = append(secrets, &Secret{Name: name, Path: path, Template: template, Command: command})
 		}
 	}
 	return secrets
