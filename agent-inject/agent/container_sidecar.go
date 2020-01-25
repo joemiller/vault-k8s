@@ -2,6 +2,7 @@ package agent
 
 import (
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/hashicorp/vault/sdk/helper/pointerutil"
@@ -62,15 +63,20 @@ func (a *Agent) ContainerSidecar() (corev1.Container, error) {
 		return corev1.Container{}, err
 	}
 
+	runAsNonRoot := true
+	if a.RunAsUser == 0 || a.RunAsGroup == 0 {
+		runAsNonRoot = false
+	}
+
 	return corev1.Container{
 		Name:      "vault-agent",
 		Image:     a.ImageName,
 		Env:       envs,
 		Resources: resources,
 		SecurityContext: &corev1.SecurityContext{
-			RunAsUser:    pointerutil.Int64Ptr(100),
-			RunAsGroup:   pointerutil.Int64Ptr(1000),
-			RunAsNonRoot: pointerutil.BoolPtr(true),
+			RunAsUser:    pointerutil.Int64Ptr(a.RunAsUser),
+			RunAsGroup:   pointerutil.Int64Ptr(a.RunAsGroup),
+			RunAsNonRoot: pointerutil.BoolPtr(runAsNonRoot),
 		},
 		VolumeMounts: volumeMounts,
 		Command:      []string{"/bin/sh", "-ec"},
